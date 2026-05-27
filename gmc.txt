@@ -1,13 +1,1 @@
-[Unit]
-Description=My Date Logger Script
-After=network.target
 
-[Service]
-User=ubuntu
-WorkingDirectory=/home/ubuntu
-ExecStart=/home/ubuntu/myscript.sh
-Restart=always
-RestartSec=2
-
-[Install]
-WantedBy=multi-user.target
