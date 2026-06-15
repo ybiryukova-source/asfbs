@@ -1,1 +1,15 @@
+Bash
+sudo apt update
+Встановіть Docker:
 
+Bash
+sudo apt install docker.io -y
+Запустіть службу Docker та додайте її в автозапуск:
+
+Bash
+sudo systemctl start docker
+sudo systemctl enable docker
+Додайте свого користувача до групи docker (щоб не писати sudo перед кожною командою Docker):
+
+Bash
+sudo usermod -aG docker $USER
