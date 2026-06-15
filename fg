@@ -1,238 +1,246 @@
-Підготовка до виконання роботи
-Перехід у папку домашнього завдання
-cd ~/homework/module2
+Домашня робота
+Варіант А — Аналіз життєвого циклу контейнера
+1. Підготовка
 
-Перевірка поточної директорії:
+Перевірити, що Docker працює:
+
+docker --version
+
+Наприклад:
+
+Docker version 28.x.x
+
+Перевірити, чи запущений Docker Engine:
+
+docker ps
+
+Очікувано:
+
+CONTAINER ID   IMAGE   COMMAND   STATUS   PORTS   NAMES
+
+(список може бути порожнім)
+
+2. Запуск контейнера
+
+Запускаємо простий HTTP-сервер Python:
+
+docker run -d \
+--name my-python-server \
+-p 8080:8000 \
+python:3.11-slim \
+python -m http.server 8000
+
+Пояснення:
+
+-d — запуск у фоні
+--name — ім'я контейнера
+-p 8080:8000 — проброс порту
+python:3.11-slim — образ
+python -m http.server 8000 — запуск сервера
+Перевірка
+
+Показати контейнер:
+
+docker ps
+
+Приблизний результат:
+
+CONTAINER ID   IMAGE              STATUS
+a1b2c3d4e5     python:3.11-slim   Up 10 seconds
+
+Перевірити доступність сервера:
+
+curl http://localhost:8080
+
+або відкрити браузер:
+
+http://localhost:8080
+
+Побачиш список файлів.
+
+3. Аналіз процесу
+Заходимо всередину контейнера
+docker exec -it my-python-server sh
+
+Тепер ми всередині контейнера.
+
+Запрошення може виглядати так:
+
+#
+
+або
+
+/#
+Подивитися поточну директорію
+pwd
+
+Наприклад:
+
+/
+Подивитися файли
+ls
+
+Наприклад:
+
+bin
+dev
+etc
+usr
+tmp
+Перейти в іншу папку
+cd /tmp
+
+Перевірити:
 
 pwd
-Створення файлу скрипта
-touch backup.sh
-
-Перевірка:
-
-ls
-Завдання 1. Перевірка аргументів
-Відкриття файлу для редагування
-nano backup.sh
-Реалізація перевірки кількості аргументів
-
-Додаємо код:
-
-if [ $# -ne 2 ]; then
-    echo "Usage: ./backup.sh <log_dir> <backup_dir>"
-    exit 1
-fi
-Пояснення
-$# — кількість переданих аргументів.
--ne — перевірка "не дорівнює".
-exit 1 — завершення з кодом помилки.
-Реалізація перевірки каталогів
-
-Додаємо:
-
-LOG_DIR="$1"
-BACKUP_DIR="$2"
-
-if [ ! -d "$LOG_DIR" ] || [ ! -d "$BACKUP_DIR" ]; then
-    echo "Usage: ./backup.sh <log_dir> <backup_dir>"
-    exit 1
-fi
-Пояснення
-$1 — каталог логів.
-$2 — каталог бекапів.
--d перевіряє існування директорії.
-! означає заперечення.
-|| означає логічне АБО.
-Перевірка роботи
-
-Запуск без аргументів:
-
-./backup.sh
 
 Результат:
 
-Usage: ./backup.sh <log_dir> <backup_dir>
+/tmp
+Повернутися назад
 
-Запуск з неіснуючим каталогом:
+На один рівень:
 
-./backup.sh test backups
+cd ..
+
+У домашню директорію:
+
+cd
+
+У корінь:
+
+cd /
+4. Знайти PID 1
+
+Всередині контейнера:
+
+ps aux
+
+або
+
+ps -ef
+
+Приблизний результат:
+
+PID USER     TIME COMMAND
+
+1 root     0:00 python -m http.server 8000
+15 root    0:00 sh
+21 root    0:00 ps aux
+Висновок
+
+PID 1:
+
+python -m http.server 8000
+
+Саме він є головним процесом контейнера, тому що був запущений командою:
+
+python -m http.server 8000
+
+Контейнер існує доти, доки працює цей процес.
+
+5. Вихід із контейнера
+
+Вийти:
+
+exit
+
+або
+
+Ctrl + D
+
+Контейнер продовжить працювати.
+
+6. Аналіз логів
+
+Подивитися логи:
+
+docker logs my-python-server
+
+Спочатку можуть бути порожні.
+
+Згенеруємо запит:
+
+curl http://localhost:8080
+
+Тепер знову:
+
+docker logs my-python-server
+
+Приблизний результат:
+
+127.0.0.1 - - [11/Jun/2026 12:00:00]
+"GET / HTTP/1.1" 200 -
+Живий перегляд логів
+docker logs -f my-python-server
+
+У другому терміналі виконати:
+
+curl http://localhost:8080
+
+У логах з'являться нові записи.
+
+Вихід із режиму перегляду:
+
+Ctrl + C
+Пояснення
+
+Логи беруться не з файлів.
+
+Python HTTP Server пише повідомлення у:
+
+stdout
+
+Docker читає stdout та stderr процесу і показує їх через:
+
+docker logs
+7. Аналіз завершення контейнера
+
+Зупинити контейнер:
+
+docker stop my-python-server
+
+Приблизний результат:
+
+my-python-server
+
+Перевірити стан:
+
+docker ps -a
 
 Результат:
 
-Usage: ./backup.sh <log_dir> <backup_dir>
-Завдання 2. Захист від паралельного запуску
-Додавання lock-файлу
+Exited (0)
+Який сигнал отримує процес?
 
-У скрипт додаємо:
+Команда:
 
-LOCK_FILE="/tmp/backup.lock"
+docker stop
 
-if [ -f "$LOCK_FILE" ]; then
-    echo "Backup already running"
-    exit 1
-fi
+спочатку надсилає:
 
-touch "$LOCK_FILE"
-Пояснення
-/tmp/backup.lock використовується як маркер запуску.
--f перевіряє існування файлу.
-Якщо файл існує, скрипт завершується.
-Автоматичне видалення lock-файлу
+SIGTERM
 
-Додаємо:
+Після цього Docker чекає приблизно 10 секунд.
 
-trap "rm -f $LOCK_FILE" EXIT
-Пояснення
+Якщо процес завершується нормально:
 
-Після завершення скрипта lock-файл автоматично видаляється.
+контейнер коректно зупиняється
+Якщо процес ігнорує SIGTERM
 
-Перевірка роботи
+Docker чекає таймаут і надсилає:
 
-Створюємо lock-файл вручну:
+SIGKILL
 
-touch /tmp/backup.lock
+Цей сигнал вже неможливо перехопити або проігнорувати.
 
-Запускаємо скрипт:
+Процес буде примусово завершений.
 
-./backup.sh logs backups
+8. Підсумковий висновок для звіту
+У роботі було запущено контейнер із простим HTTP-сервером Python. Під час аналізу процесів встановлено, що головним процесом контейнера є Python HTTP Server з PID 1. Саме цей процес визначає життєвий цикл контейнера: поки він працює — контейнер існує, після його завершення контейнер зупиняється.
 
-Результат:
+Було досліджено механізм логування Docker. Логи отримувались через команду docker logs і формувались із потоків stdout та stderr процесу всередині контейнера.
 
-Backup already running
+Також було перевірено завершення роботи контейнера через docker stop. При цьому процес отримує сигнал SIGTERM для коректного завершення. Якщо процес не реагує на цей сигнал, Docker примусово завершує його сигналом SIGKILL. Це підтверджує, що контейнер є лише ізольованим середовищем виконання Linux-процесу, а його життєвий цикл повністю залежить від головного процесу PID 1.
 
-Після перевірки:
-
-rm /tmp/backup.lock
-Завдання 3. Створення архіву логів
-Створення тестових директорій
-mkdir logs
-mkdir backups
-Створення тестових логів
-echo "Error 1" > logs/app.log
-echo "Error 2" > logs/system.log
-
-Перевірка:
-
-ls logs
-
-Результат:
-
-app.log
-system.log
-Формування імені архіву
-
-Додаємо:
-
-DATE=$(date +"%Y-%m-%d_%H-%M")
-
-ARCHIVE_NAME="logs_backup_${DATE}.tar.gz"
-ARCHIVE_PATH="${BACKUP_DIR}/${ARCHIVE_NAME}"
-Пояснення
-
-Ім'я архіву буде мати вигляд:
-
-logs_backup_2026-06-11_15-30.tar.gz
-Створення архіву
-
-Додаємо:
-
-tar -czf "$ARCHIVE_PATH" -C "$LOG_DIR" .
-Пояснення
-tar — архіватор.
--c — створити архів.
--z — стиснення gzip.
--f — ім'я файлу архіву.
--C — перейти в каталог перед архівацією.
-Перевірка роботи
-
-Запуск:
-
-./backup.sh logs backups
-
-Приклад результату:
-
-Backup created: backups/logs_backup_2026-06-11_15-30.tar.gz
-
-Перевірка архіву:
-
-ls backups
-
-Приклад:
-
-logs_backup_2026-06-11_15-30.tar.gz
-Завдання 4. Перевірка результату
-Перевірка коду завершення архівації
-
-Додаємо:
-
-if [ $? -ne 0 ]; then
-    echo "Backup failed"
-    exit 2
-fi
-Пояснення
-$? містить код завершення останньої команди.
-0 означає успіх.
-Будь-яке інше значення означає помилку.
-Повідомлення про успішне завершення
-
-Додаємо:
-
-echo "Backup created: $ARCHIVE_PATH"
-Перевірка успішного виконання
-
-Запуск:
-
-./backup.sh logs backups
-
-Результат:
-
-Backup created: backups/logs_backup_2026-06-11_15-30.tar.gz
-Повний код скрипта
-#!/bin/bash
-
-if [ $# -ne 2 ]; then
-    echo "Usage: ./backup.sh <log_dir> <backup_dir>"
-    exit 1
-fi
-
-LOG_DIR="$1"
-BACKUP_DIR="$2"
-
-if [ ! -d "$LOG_DIR" ] || [ ! -d "$BACKUP_DIR" ]; then
-    echo "Usage: ./backup.sh <log_dir> <backup_dir>"
-    exit 1
-fi
-
-LOCK_FILE="/tmp/backup.lock"
-
-if [ -f "$LOCK_FILE" ]; then
-    echo "Backup already running"
-    exit 1
-fi
-
-touch "$LOCK_FILE"
-
-trap "rm -f $LOCK_FILE" EXIT
-
-DATE=$(date +"%Y-%m-%d_%H-%M")
-
-ARCHIVE_NAME="logs_backup_${DATE}.tar.gz"
-ARCHIVE_PATH="${BACKUP_DIR}/${ARCHIVE_NAME}"
-
-tar -czf "$ARCHIVE_PATH" -C "$LOG_DIR" .
-
-if [ $? -ne 0 ]; then
-    echo "Backup failed"
-    exit 2
-fi
-
-echo "Backup created: $ARCHIVE_PATH"
-Завершення роботи
-Надання прав на виконання
-chmod +x backup.sh
-Створення Markdown-файлу
-touch Biryukova_homework_module6.md
-Завантаження у GitHub
-git add .
-git commit -m "Module 6 homework"
-git push
+Такий варіант повністю покриває всі вимоги завдання й легко виконується навіть на чистому Docker без створення власного Dockerfile.
