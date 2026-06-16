@@ -32,12 +32,10 @@ python -m http.server 8000
 
 Пояснення:
 
--d — запуск у фоні
---name — ім'я контейнера
--p 8080:8000 — проброс порту
-python:3.11-slim — образ
-python -m http.server 8000 — запуск сервера
-Перевірка
+sudo docker run -d \
+--name my-fast-server \
+-p 8080:80 \
+busybox httpd -f -p 80
 
 Показати контейнер:
 
